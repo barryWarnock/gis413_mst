@@ -68,7 +68,7 @@ def get_edges_in_route(network, edges, start, mst):
     """used to connect a 'node' to a pre-existing mst, returns the shortest path to get to any point that is already in the mst"""
     seenEdges = {e2: 0 for e2 in network[start]}
     seenEdges[start] = -1
-    edgeQueue = deque([(e2,0,[]) for e2  in network[start]])#(the node to visit, what it cost to get there, what we've visited so far)
+    edgeQueue = deque([(e2,0,[start]) for e2  in network[start]])#(the node to visit, what it cost to get there, what we've visited so far)
     while(len(edgeQueue)):
         current = edgeQueue.popleft()
         if (current[0] in mst):
@@ -80,15 +80,12 @@ def get_edges_in_route(network, edges, start, mst):
                 if nextEdge not in seenEdges or costToNext < seenEdges[nextEdge]:
                     seenEdges[nextEdge] = costToNext
                     edgeQueue.append((nextEdge, costToNext, current[2]+[current[0]]))
-    return []
+
 
 def find_mst(paths, importantEdges, network, edges):#Kruskal's algorithm
     """returns the edges we need to have for a minimum spanning tree"""
     sortedEdges = deque(sorted([{"connects":e,"cost":paths[e]["cost"],"path":paths[e]["path"]} for e in paths], key= lambda x: x["cost"]))
     forest = []
-    for e in importantEdges:
-        mst = set(e)
-        forest.append({"nodes":[e],"mst":mst})
             
     while len(sortedEdges):
         potentialEdge = sortedEdges.popleft()
@@ -101,19 +98,21 @@ def find_mst(paths, importantEdges, network, edges):#Kruskal's algorithm
 
         other = None
         for i in range(len(forest)):
-            if n1 in forest[i]:
+            if n1 in forest[i]["nodes"]:
                 other = n2
                 f1 = i
-            if n2 in forest[i]:
+            if n2 in forest[i]["nodes"]:
                 other = n1
                 f1 = i
             if other is not None:
                 for j in range(i, len(forest)):
-                    if other in forest[j]:
+                    if other in forest[j]["nodes"]:
                         f2 = j
                         break
                 break
-        
+
+        if f1 is None and f2 is None:
+            forest.append({"nodes":[n1, n2],"mst":set([n1,n2]+potentialEdge["path"])})
         if f1 is None and f2 is not None:
             forest[f2]["nodes"].append(other)
             forest[f2]["mst"].update(get_edges_in_route(network, edges, other, forest[f2]["mst"]))
